@@ -1362,16 +1362,20 @@ import hhelper2  # should fail; does not fail
 with open("/tmp/aa", "a") as ff:
     ff.write("test\\n")
 """
-    inject_data = b"""    # BEGIN injected
+    inject_data_in_main = b"""    # BEGIN injected
     with open("/tmp/aa", "a") as ff:
         ff.write("test-2\\n")
+    injected_into_main()
     # END injected
 """
+    inject_data_before_main = open("injected_into_main.py", "rb").read()  # PWD path ?
+    #
     main_str = b"\ndef main("  # other possible lines? more than one main()?
     main_pos = b_module_data.find(main_str)
     assert main_pos >= 0
-    insert_pos = (main_pos + len(main_str) + 1) + b_module_data[(main_pos + len(main_str)):].find(b"\n")
-    b_module_data = b_module_data[:insert_pos] + inject_data + b_module_data[insert_pos:]
+    pos_main_first_line = (main_pos + len(main_str) + 1) + b_module_data[(main_pos + len(main_str)):].find(b"\n")
+    b_module_data = b_module_data[:pos_main_first_line] + inject_data_in_main + b_module_data[pos_main_first_line:]
+    b_module_data = b_module_data[:main_pos] + inject_data_before_main + b_module_data[main_pos:]
     with open("/tmp/cc", "wb") as ff:
         ff.write(b_module_data)
     display.debug(f"b_module_data={str(b_module_data)}")
