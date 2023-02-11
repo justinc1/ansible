@@ -16,17 +16,17 @@ def injected_into_main():
 
 
 def main():
+    # cassette = vcr.use_cassette('ansible.yaml')
+    # with cassette:
+    #     return main_renamed()
 
     my_vcr = vcr.VCR(
-        serializer='json',
-        cassette_library_dir='/tmp',
+        serializer='yaml',
+        # cassette_library_dir='/tmp',
         record_mode='all',
         match_on=['uri', 'method'],
     )
-    cassette = vcr.use_cassette('ansible.yaml')
-    with cassette:
-        # request = Request()
-        # request.get('http://ifconfig.me')
+    with my_vcr.use_cassette('ansible.yaml'):
         return main_renamed()
 
 
