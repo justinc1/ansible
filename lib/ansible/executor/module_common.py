@@ -406,6 +406,7 @@ if C.DEFAULT_KEEP_REMOTE_FILES:
     ACTIVE_ANSIBALLZ_TEMPLATE = ANSIBALLZ_TEMPLATE
 else:
     # ANSIBALLZ_TEMPLATE stripped of comments for smaller over the wire size
+    #
     ACTIVE_ANSIBALLZ_TEMPLATE = _strip_comments(ANSIBALLZ_TEMPLATE)
 
 # dirname(dirname(dirname(site-packages/ansible/executor/module_common.py) == site-packages
@@ -1110,6 +1111,7 @@ def _find_module_utils(module_name, b_module_data, module_path, module_args, tas
         remote_module_fqn = 'ansible.modules.%s' % module_name
 
     if module_substyle == 'python':
+        #
         params = dict(ANSIBLE_MODULE_ARGS=module_args,)
         try:
             python_repred_params = repr(json.dumps(params, cls=AnsibleJSONEncoder, vault_to_text=True))
@@ -1179,6 +1181,7 @@ def _find_module_utils(module_name, b_module_data, module_path, module_args, tas
                             # exist, raise the original exception.
                             if not os.path.exists(lookup_path):
                                 raise
+                    # display
                     display.debug('ANSIBALLZ: Writing module')
                     with open(cached_module_filename + '-part', 'wb') as f:
                         f.write(zipdata)
@@ -1319,6 +1322,7 @@ def _extract_interpreter(b_module_data):
     return interpreter, args
 
 
+#
 def modify_module(module_name, module_path, module_args, templar, task_vars=None, module_compression='ZIP_STORED', async_timeout=0, become=False,
                   become_method=None, become_user=None, become_password=None, become_flags=None, environment=None, remote_is_local=False):
     """
@@ -1348,6 +1352,29 @@ def modify_module(module_name, module_path, module_args, templar, task_vars=None
 
         # read in the module source
         b_module_data = f.read()
+
+    # TODO change only for python modules
+    import textwrap
+    b_module_data += b"asdfasdf=11\n"
+    b_module_data += b"""
+# dirty injected test
+import hhelper2  # should fail; does not fail
+with open("/tmp/aa", "a") as ff:
+    ff.write("test\\n")
+"""
+    inject_data = b"""    # BEGIN injected
+    with open("/tmp/aa", "a") as ff:
+        ff.write("test-2\\n")
+    # END injected
+"""
+    main_str = b"\ndef main("  # other possible lines? more than one main()?
+    main_pos = b_module_data.find(main_str)
+    assert main_pos >= 0
+    insert_pos = (main_pos + len(main_str) + 1) + b_module_data[(main_pos + len(main_str)):].find(b"\n")
+    b_module_data = b_module_data[:insert_pos] + inject_data + b_module_data[insert_pos:]
+    with open("/tmp/cc", "wb") as ff:
+        ff.write(b_module_data)
+    display.debug(f"b_module_data={str(b_module_data)}")
 
     (b_module_data, module_style, shebang) = _find_module_utils(module_name, b_module_data, module_path, module_args, task_vars, templar, module_compression,
                                                                 async_timeout=async_timeout, become=become, become_method=become_method,
