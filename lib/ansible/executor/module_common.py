@@ -1371,14 +1371,21 @@ with open("/tmp/aa", "a") as ff:
     inject_data_before_main = open("injected_into_main.py", "rb").read()  # PWD path ?
     #
     main_str = b"\ndef main("  # other possible lines? more than one main()?
+    main_str_renamed = b"\ndef main_renamed("
     main_pos = b_module_data.find(main_str)
     assert main_pos >= 0
-    pos_main_first_line = (main_pos + len(main_str) + 1) + b_module_data[(main_pos + len(main_str)):].find(b"\n")
+    #
+    # rename main()
+    # modified main(0 has no params :/
+    b_module_data = b_module_data[:main_pos] + main_str_renamed + b_module_data[main_pos + len(main_str):]
+    #
+    # main_pos = b_module_data.find(main_str_renamed)
+    pos_main_first_line = (main_pos + len(main_str_renamed) + 1) + b_module_data[(main_pos + len(main_str_renamed)):].find(b"\n")
     b_module_data = b_module_data[:pos_main_first_line] + inject_data_in_main + b_module_data[pos_main_first_line:]
     b_module_data = b_module_data[:main_pos] + inject_data_before_main + b_module_data[main_pos:]
     with open("/tmp/cc", "wb") as ff:
         ff.write(b_module_data)
-    display.debug(f"b_module_data={str(b_module_data)}")
+    # display.debug(f"b_module_data={str(b_module_data)}")
 
     (b_module_data, module_style, shebang) = _find_module_utils(module_name, b_module_data, module_path, module_args, task_vars, templar, module_compression,
                                                                 async_timeout=async_timeout, become=become, become_method=become_method,

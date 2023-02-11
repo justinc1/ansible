@@ -8,3 +8,5 @@ export SC_USERNAME=xlab
 source .venv/bin/activate
 pip install -U pip
 (cd hhelper && pip install -e .)
+
+pip install vcrpy
